@@ -420,5 +420,3 @@ while rodando:
 
     jogo.update(dt)
     jogo.desenhar(TELA)
-
-# não precisa usar pygame.quit() aqui porque a ideia é simulação contínua
