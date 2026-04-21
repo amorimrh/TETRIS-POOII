@@ -28,9 +28,3 @@ Um simulador interativo onde uma **Inteligência Artificial** joga uma partida i
 ---
 
 ## 💻 Como rodar o teste na sua máquina
-
-Como o projeto está em desenvolvimento, você pode clonar o repositório para testar o estado atual da IA:
-
-1. Clone este repositório:
-   ```bash
-   git clone [https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git](https://github.com/SEU_USUARIO/SEU_REPOSITORIO.git)
