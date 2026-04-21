@@ -37,4 +37,4 @@ Como o projeto está em desenvolvimento, você pode testar o estado atual da IA 
 2. **Clone este repositório:**
    Abra o seu terminal (ou prompt de comando) e digite:
    ```bash
-   git clone [Repositório Tetris](https://github.com/amorimrh/TETRIS-POOII.git)
+   git clone https://github.com/amorimrh/TETRIS-POOII.git
