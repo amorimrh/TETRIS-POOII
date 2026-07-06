@@ -1,422 +1,178 @@
-import pygame
+import sys
+import os
 import random
-import copy
-from abc import ABC, abstractmethod
+import pygame
+import csv
+import datetime
+from config import *
+from elementos import GeradorDePecas
+from estrategia import JogadorInteligente, JogadorIntermediario, JogadorLimitado
+from motor import Jogo
 
-# Biblioteca principal que cria a janela, desenha tudo e controla o jogo
-# Usada para sortear qual peça cai e em qual coluna ela aparece
-# Cria cópias da matriz para a IA testar jogadas sem mexer no jogo original
-# Ferramentas de POO usadas para criar a Classe Abstrata
+# ================= INTERFACE INICIAL TERMINAL =================
+print("="*60)
+print("SIMULADOR DE IA TETRIS (MULTIVERSO ARQUITETURAL)")
+print("="*60)
+print("[G] Modo Gráfico: 3 Motores | Raio-X | Risco vs Recompensa")
+print("[S] Modo Simulação: 5 Motores | Laboratório (300 Peças)")
+escolha = input("Digite o modo desejado (G ou S): ").strip().upper()
 
-# inicia o pygame (necessário pra usar tudo da biblioteca)
-pygame.init()
+MODO_GRAFICO = True if escolha != 'S' else False
 
-# tamanho da tela do jogo
-LARGURA = 400
-ALTURA = 600
+# Extração parametrizada dos 3 pesos operacionais de cada IA
+peso_b_int = config_data['ia_avancada']['peso_buracos']
+peso_a_int = config_data['ia_avancada']['peso_altura']
+peso_t_int = config_data['ia_avancada']['peso_tetris']
 
-# tamanho de cada bloco (cada “quadradinho” do tetris)
-TAMANHO = 20
+peso_b_mid = config_data['ia_intermediaria']['peso_buracos']
+peso_a_mid = config_data['ia_intermediaria']['peso_altura']
+peso_t_mid = config_data['ia_intermediaria']['peso_tetris']
 
-# quantidade de colunas e linhas baseado no tamanho da tela
-COLUNAS = LARGURA // TAMANHO
-LINHAS = ALTURA // TAMANHO
+peso_b_lim = config_data['ia_limitada']['peso_buracos']
+peso_a_lim = config_data['ia_limitada']['peso_altura']
+peso_t_lim = config_data['ia_limitada']['peso_tetris']
 
-# cria a janela do jogo
-TELA = pygame.display.set_mode((LARGURA, ALTURA))
-pygame.display.set_caption("Tetris")
+# Constante de término exato restaurada para 300
+MAX_PECAS = 300
 
-# controla o FPS (quantas vezes o jogo atualiza por segundo)
-CLOCK = pygame.time.Clock()
-
-# fonte usada pra escrever na tela (pontuação e game over)
-FONT = pygame.font.SysFont(None, 30)
-
-# cada tipo de peça tem uma cor fixa (fica mais fácil visualizar)
-# Ajustei um pouco as cores pra ficarem mais vibrantes como na sua foto
-CORES_FORMAS = {
-    0: (230, 20, 20),    # Vermelho
-    1: (20, 230, 20),    # Verde
-    2: (20, 20, 230),    # Azul
-    3: (230, 230, 20),   # Amarelo
-    4: (20, 200, 230)    # Ciano/Azul claro
-}
-
-# formatos das peças
-# cada lista representa um formato diferente
-# 1 = tem bloco / 0 = vazio
-FORMAS = [
-    [[1, 1, 1]],              # linha deitada
-
-    [[1, 1],                  # quadrado (mais simples)
-     [1, 1]],
-
-    [[1, 0],                  # formato L
-     [1, 0],
-     [1, 1]],
-
-    [[0, 1],                  # L invertido
-     [0, 1],
-     [1, 1]],
-
-    [[1],                     # linha em pé (tipo I)
-     [1],
-     [1],
-     [1]]
-]
-
-# ================= CLASSE ABSTRATA =================
-class ElementoVisual(ABC):
-    @abstractmethod
-    def desenhar(self, tela):
-        pass
-
-    # Criei um MÉTODO ESTÁTICO. Como a Grade e a Peça precisam desenhar os blocos 
-    # com o mesmo efeito 3D, eu coloco o código aqui para reaproveitar (Herança)!
-    @staticmethod
-    def desenhar_bloco_3d(tela, cor, px, py):
-        # 1. Base (Pinto o interior do quadrado)
-        pygame.draw.rect(tela, cor, (px, py, TAMANHO, TAMANHO))
-
-        # 2. Lógica para gerar as cores de luz e sombra
-        r, g, b = cor
-        claro = (min(255, r + 80), min(255, g + 80), min(255, b + 80)) # Clareia a cor
-        escuro = (max(0, r - 80), max(0, g - 80), max(0, b - 80))      # Escurece a cor
-
-        # 3. Desenho as bordas chanfradas para dar o efeito de botão (espessura de 3 pixels)
-        borda = 3
-        # Topo (luz)
-        pygame.draw.polygon(tela, claro, [(px, py), (px + TAMANHO, py), (px + TAMANHO - borda, py + borda), (px + borda, py + borda)])
-        # Esquerda (luz)
-        pygame.draw.polygon(tela, claro, [(px, py), (px + borda, py + borda), (px + borda, py + TAMANHO - borda), (px, py + TAMANHO)])
-        # Fundo (sombra)
-        pygame.draw.polygon(tela, escuro, [(px, py + TAMANHO), (px + TAMANHO, py + TAMANHO), (px + TAMANHO - borda, py + TAMANHO - borda), (px + borda, py + TAMANHO - borda)])
-        # Direita (sombra)
-        pygame.draw.polygon(tela, escuro, [(px + TAMANHO, py), (px + TAMANHO - borda, py + borda), (px + TAMANHO - borda, py + TAMANHO - borda), (px + TAMANHO, py + TAMANHO)])
-
-        # 4. Adiciono aquele pontinho de brilho extra no canto superior esquerdo (igual da foto)
-        pygame.draw.rect(tela, (255, 255, 255), (px + borda, py + borda, 3, 3))
-
-
-# ================= CLASSE PEÇA =================
-class Peca(ElementoVisual):
+# ================= MODO GRAFICO (3 MOTORES - APRESENTAÇÃO) =================
+if MODO_GRAFICO:
+    pygame.init()
+    # Detecção de monitor (Responsividade)
+    info = pygame.display.Info()
+    W_TELA = info.current_w
+    H_TELA = info.current_h
     
-    # ATRIBUTO DE CLASSE: Funciona como um contador global para todas as peças.
-    _contador_id = 0
+    # Elevação de prioridade para Fullscreen nativo
+    TELA = pygame.display.set_mode((W_TELA, H_TELA), pygame.FULLSCREEN)
+    pygame.display.set_caption("Simulador Tetris POO")
+    CLOCK = pygame.time.Clock()
+    
+    font_name = "consolas" if "consolas" in pygame.font.get_fonts() else "courier new"
+    F_TITULO = pygame.font.SysFont(font_name, 22, bold=True)
+    F_DADOS = pygame.font.SysFont(font_name, 16)
+    F_VALORES = pygame.font.SysFont(font_name, 20, bold=True)
+    F_DASH = pygame.font.SysFont(font_name, 26, bold=True)
 
-    def __init__(self):
-        # Cada vez que uma peça nasce, aumento o contador e dou esse número pra ela
-        Peca._contador_id += 1
-        self._id = Peca._contador_id
-        
-        # escolhe aleatoriamente qual tipo de peça vai aparecer (encapsulado com _)
-        self._tipo = random.randint(0, len(FORMAS)-1)
+    max_w = W_TELA // 4 
+    max_h = int(H_TELA * 0.70)
+    tamanho_calc = min(max_w // 16, max_h // LINHAS)
+    VISUAL["TAMANHO"] = max(12, tamanho_calc) 
 
-        # pega o formato baseado no tipo
-        self._forma = FORMAS[self._tipo]
+    W_SISTEMA = (COLUNAS * VISUAL["TAMANHO"]) + (6 * VISUAL["TAMANHO"])
+    ALTURA_JOGO = LINHAS * VISUAL["TAMANHO"]
+    
+    gap = (W_TELA - (W_SISTEMA * 3)) // 4 
+    pos_y = int(H_TELA * 0.12) 
+    pos_x = [gap + (W_SISTEMA + gap) * i for i in range(3)]
 
-        # define a cor da peça
-        self._cor = CORES_FORMAS[self._tipo]
+    # Construtores consolidados passando os 3 argumentos rigorosamente
+    geradores = [GeradorDePecas(SEMENTE) for _ in range(3)]
+    jogadores = [
+        JogadorLimitado(peso_b_lim, peso_a_lim, peso_t_lim),
+        JogadorIntermediario(peso_b_mid, peso_a_mid, peso_t_mid),
+        JogadorInteligente(peso_b_int, peso_a_int, peso_t_int)
+    ]
+    jogos = [Jogo(pos_x[i], pos_y, jogadores[i], geradores[i], ["IA LIMITADA", "IA INTERMEDIARIA", "IA AVANCADA"][i]) for i in range(3)]
 
-        # posição inicial (x aleatório pra espalhar melhor)
-        self._x = random.randint(0, COLUNAS - len(self._forma[0]))
-        self._y = 0  # sempre começa no topo
+    fator_tempo = 1.0  
+    raio_x_ativo = False
+    rodando = True
 
-    # Getters e Setters para mover a peça com segurança
-    @property
-    def id(self):
-        return self._id
-        
-    @property
-    def x(self):
-        return self._x
+    while rodando:
+        dt = CLOCK.tick(120) 
+        for evento in pygame.event.get():
+            if evento.type == pygame.QUIT: rodando = False
+            elif evento.type == pygame.KEYDOWN:
+                if evento.key == pygame.K_ESCAPE: rodando = False
+                elif evento.key == pygame.K_UP: fator_tempo = min(32.0, fator_tempo * 2.0)
+                elif evento.key == pygame.K_DOWN: fator_tempo = max(0.25, fator_tempo / 2.0)
+                elif evento.key == pygame.K_TAB: raio_x_ativo = not raio_x_ativo
 
-    @x.setter
-    def x(self, valor):
-        self._x = valor
+        for jogo in jogos:
+            if jogo.pecas_jogadas >= MAX_PECAS: jogo.game_over = True
+            jogo.update(dt, fator_tempo, True)
 
-    @property
-    def y(self):
-        return self._y
+        TELA.fill((10, 12, 18)) 
 
-    @y.setter
-    def y(self, valor):
-        self._y = valor
-
-    @property
-    def forma(self):
-        return self._forma
-        
-    # Criei um SETTER para a forma também! Assim o Jogo pode mandar a peça girar.
-    @forma.setter
-    def forma(self, nova_forma):
-        self._forma = nova_forma
-        
-    @property
-    def cor(self):
-        return self._cor
-
-    def desenhar(self, tela):
-        # peço para o método estático desenhar cada quadradinho da peça com o efeito 3D
-        for i, linha in enumerate(self._forma):
-            for j, valor in enumerate(linha):
-                if valor:
-                    px = (self._x + j) * TAMANHO
-                    py = (self._y + i) * TAMANHO
-                    # Uso o método herdado da ElementoVisual
-                    self.desenhar_bloco_3d(tela, self._cor, px, py)
-
-
-# ================= CLASSE GRADE =================
-class Grade(ElementoVisual):
-    def __init__(self):
-        # cria a matriz do jogo (tabuleiro vazio) - encapsulada com _
-        self._grid = [[None for _ in range(COLUNAS)] for _ in range(LINHAS)]
-
-    def colidiu(self, peca):
-        # verifica se a peça bateu no chão, parede ou outra peça
-        for i, linha in enumerate(peca.forma):
-            for j, valor in enumerate(linha):
-                if valor:
-                    x = peca.x + j
-                    y = peca.y + i
-
-                    # bateu nos limites da tela
-                    if y >= LINHAS or x < 0 or x >= COLUNAS:
-                        return True
-
-                    # bateu em outro bloco já fixo
-                    if y >= 0 and self._grid[y][x]:
-                        return True
-        return False
-
-    def fixar(self, peca):
-        # quando a peça para, eu gravo a cor E o ID único dela na grade
-        for i, linha in enumerate(peca.forma):
-            for j, valor in enumerate(linha):
-                if valor:
-                    x = peca.x + j
-                    y = peca.y + i
-                    if 0 <= y < LINHAS:
-                        self._grid[y][x] = (peca.cor, peca.id)
-
-    def copiar(self):
-        # cria uma cópia da grade (a IA usa isso pra testar jogadas)
-        return copy.deepcopy(self._grid)
-
-    def simular_queda(self, forma, col):
-        # simula até onde a peça cairia em uma coluna
-        y = 0
-        while True:
-            colisao = False
-            for i, linha in enumerate(forma):
-                for j, v in enumerate(linha):
-                    if v:
-                        x = col + j
-                        if y + i >= LINHAS or (y + i >= 0 and self._grid[y+i][x]):
-                            colisao = True
-            if colisao:
-                return y - 1
-            y += 1
-
-    def avaliar(self, grid_temp):
-        # dá uma “nota” pra jogada (quanto menor melhor)
-        buracos = 0
-        altura_total = 0
-
-        for col in range(COLUNAS):
-            encontrou = False
-            for lin in range(LINHAS):
-                if grid_temp[lin][col]:
-                    encontrou = True
-                    altura_total += LINHAS - lin
-                elif encontrou:
-                    # espaço vazio embaixo de bloco = buraco (ruim)
-                    buracos += 1
-
-        return buracos * 5 + altura_total
-
-    def melhor_posicao(self, peca):
-        # agora a IA precisa escolher não só o X, mas a ROTAÇÃO também!
-        melhor_score = float('inf')
-        melhor_x = peca.x
-        melhor_forma = peca.forma  # guarda o formato ideal descoberto
-        
-        forma_teste = peca.forma
-
-        # Criei um loop para testar as 4 posições de rotação (0, 90, 180 e 270 graus)
-        for _ in range(4):
-            # Para cada rotação, testo todas as colunas possíveis
-            for col in range(COLUNAS - len(forma_teste[0]) + 1):
-                y_final = self.simular_queda(forma_teste, col)
-                grid_temp = self.copiar()
-
-                # simula colocar a peça girada ali
-                for i, linha in enumerate(forma_teste):
-                    for j, v in enumerate(linha):
-                        if v:
-                            grid_temp[y_final+i][col+j] = 1
-
-                score = self.avaliar(grid_temp)
-
-                # se achar uma nota melhor, salvo a coluna e o formato da peça girada!
-                if score < melhor_score:
-                    melhor_score = score
-                    melhor_x = col
-                    melhor_forma = forma_teste
-
-            # Antes da próxima iteração, eu rotaciono a matriz de teste 90 graus no sentido horário
-            # A lógica `zip(*forma_teste[::-1])` inverte a matriz em Python
-            forma_teste = [list(linha) for linha in zip(*forma_teste[::-1])]
-
-        # Agora eu devolvo as duas coisas: Onde a peça tem que ir, e como ela tem que ficar!
-        return melhor_x, melhor_forma
-
-    def limpar_linhas(self):
-        # remove linhas completas
-        nova = [linha for linha in self._grid if None in linha]
-        removidas = LINHAS - len(nova)
-
-        # adiciona novas linhas vazias no topo
-        for _ in range(removidas):
-            nova.insert(0, [None for _ in range(COLUNAS)])
-
-        self._grid = nova
-        return removidas
-
-    def topo_ocupado(self):
-        # verifica se chegou no topo (game over)
-        return any(self._grid[0][col] is not None for col in range(COLUNAS))
-
-    def desenhar(self, tela):
-        # percorre toda a grade para desenhar
-        for i in range(LINHAS):
-            for j in range(COLUNAS):
-                px = j * TAMANHO
-                py = i * TAMANHO
-                
-                # se estiver vazio, desenho a luz de fundo que combinamos
-                if not self._grid[i][j]:
-                    cor_fundo = (30, 40, 60) # Um azul bem escuro pro fundo da grade (tipo da foto)
-                    pygame.draw.rect(tela, cor_fundo, (px, py, TAMANHO, TAMANHO), 1)
-                
-                # se tiver peça fixa, uso a função do efeito 3D
-                elif self._grid[i][j]:
-                    cor = self._grid[i][j][0]
-                    self.desenhar_bloco_3d(tela, cor, px, py)
-
-
-# ================= CLASSE JOGO =================
-class Jogo:
-    def __init__(self):
-        self.reset()
-
-    def reset(self):
-        # reinicia tudo do zero
-        self.grade = Grade()
-        self.peca = Peca()
-        self.tempo = 0
-
-        # controla a velocidade da queda
-        # quanto menor esse valor, mais rápido o jogo fica
-        self.velocidade = 14
-
-        self.pontos = 0
-        self.game_over = False
-        self.timer_game_over = 0
-
-    def update(self, dt):
-        # atualiza o jogo a cada frame
-
-        # se perdeu, espera um tempo e reinicia
-        if self.game_over:
-            self.timer_game_over += dt
-            if self.timer_game_over > 2000:
-                self.reset()
-            return
-
-        # acumula tempo
-        self.tempo += dt
-
-        # controla quando a peça vai descer
-        if self.tempo > self.velocidade:
-            self.tempo = 0
-
-            # Agora eu peço as DUAS coisas para a Grade: A coluna alvo e a forma rotacionada!
-            alvo_x, melhor_forma = self.grade.melhor_posicao(self.peca)
-
-            # Aplico a rotação na peça usando o Setter que eu criei
-            self.peca.forma = melhor_forma
+        for jogo in jogos:
+            jogo.desenhar(TELA, F_TITULO, F_DADOS, F_VALORES, raio_x_ativo)
             
-            # Ajuste de segurança: como a largura da peça mudou ao girar, 
-            # verifico se ela não vazou da tela pela direita antes de mover
-            if self.peca.x > COLUNAS - len(self.peca.forma[0]):
-                self.peca.x = COLUNAS - len(self.peca.forma[0])
+        # ================= LEGENDA DE CORRIDA DE RISCO =================
+        pygame.draw.rect(TELA, (20, 24, 34), (20, 20, 240, 140), border_radius=8)
+        pygame.draw.rect(TELA, (40, 50, 70), (20, 20, 240, 140), 2, border_radius=8)
+        TELA.blit(F_DADOS.render("TABELA DE RISCO EXPONENCIAL", True, (255, 215, 0)), (30, 30))
+        for idx, (linhas, pts) in enumerate(TABELA_PONTOS.items()):
+            cor = (100, 255, 100) if linhas == 4 else (200, 200, 200)
+            TELA.blit(F_DADOS.render(f"{linhas} LINHA{'S' if linhas>1 else ' '} = {pts:03d} PTS", True, cor), (30, 60 + (idx*20)))
 
-            # move a peça até o alvo
-            if self.peca.x < alvo_x:
-                self.peca.x += 1
-            elif self.peca.x > alvo_x:
-                self.peca.x -= 1
-            else:
-                # quando chega na posição certa (já rotacionada), começa a cair
-                self.peca.y += 1
+        # ================= DASHBOARD INFERIOR =================
+        painel_y = pos_y + ALTURA_JOGO + int(H_TELA * 0.08)
+        largura_painel = W_TELA - (gap * 2)
+        pygame.draw.rect(TELA, (18, 22, 32), (gap, painel_y, largura_painel, 80), border_radius=12)
+        pygame.draw.rect(TELA, (40, 50, 70), (gap, painel_y, largura_painel, 80), 2, border_radius=12)
 
-            # verifica colisão
-            if self.grade.colidiu(self.peca):
-                self.peca.y -= 1
-                self.grade.fixar(self.peca)
-
-                # calcula pontuação
-                linhas = self.grade.limpar_linhas()
-                self.pontos += linhas * 100
-
-                # verifica game over
-                if self.grade.topo_ocupado():
-                    self.game_over = True
-                else:
-                    self.peca = Peca()
-
-    def desenhar(self, tela):
-        # desenha tudo na tela (mudei o fundo para um azul marinho bem escuro, estilo arcade)
-        tela.fill((10, 15, 30))
-        self.grade.desenhar(tela)
-
-        if not self.game_over:
-            self.peca.desenhar(tela)
-
-        # mostra pontuação
-        texto = FONT.render(f"Pontos: {self.pontos}", True, (255, 255, 255))
-        tela.blit(texto, (10, 10))
-
-        # tela de game over com a borda branca no texto vermelho
-        if self.game_over:
-            texto_go = "GAME OVER"
-            
-            # desenho o texto em branco deslocado para criar o contorno
-            for dx, dy in [(-2, 0), (2, 0), (0, -2), (0, 2), (-2, -2), (2, -2), (-2, 2), (2, 2)]:
-                borda = FONT.render(texto_go, True, (255, 255, 255))
-                tela.blit(borda, (150 + dx, (ALTURA // 2) + dy))
-            
-            # desenho o texto principal vermelho por cima do contorno
-            msg = FONT.render(texto_go, True, (255, 0, 0))
-            tela.blit(msg, (150, ALTURA // 2))
+        cor_vel = (100, 255, 150) if fator_tempo > 1.0 else (255, 180, 50) if fator_tempo < 1.0 else (200, 200, 200)
+        t_vel = F_DASH.render(f"CLOCK DO SIMULADOR: {fator_tempo:.2f}x", True, cor_vel)
+        t_dica = F_DADOS.render("[SETAS UP/DOWN] Alterar Tempo  |  [TAB] Raio-X Telemetria  |  [ESC] Desligar", True, (120, 130, 150))
+        
+        TELA.blit(t_vel, (W_TELA // 2 - t_vel.get_width() // 2, painel_y + 15))
+        TELA.blit(t_dica, (W_TELA // 2 - t_dica.get_width() // 2, painel_y + 50))
 
         pygame.display.update()
 
-# ================= LOOP PRINCIPAL =================
+# ================= MODO SIMULAÇÃO (LABORATÓRIO HEADLESS - 5 MOTORES) =================
+else:
+    # Mutantes aleatórios nascem do zero para testar teorias empíricas contra os mestres
+    peso_mutante1 = round(random.uniform(0.0, 10.0), 2)
+    peso_mutante2 = round(random.uniform(0.0, 10.0), 2)
 
-# cria o jogo
-jogo = Jogo()
-rodando = True
+    print("\nIniciando Processamento em Batch de Alta Performance (Sem interface)...")
+    print(f"Métrica de Corte: Encerramento compulsório ao computar exatamente {MAX_PECAS} peças.")
+    print("Tags do Console: [L] Limitada | [I] Intermediária | [A] Avançada | [MA/MB] Mutantes Genéticos\n")
+    
+    geradores = [GeradorDePecas(SEMENTE) for _ in range(5)]
+    jogadores = [
+        JogadorLimitado(peso_b_lim, peso_a_lim, peso_t_lim),
+        JogadorIntermediario(peso_b_mid, peso_a_mid, peso_t_mid),
+        JogadorInteligente(peso_b_int, peso_a_int, peso_t_int),
+        JogadorInteligente(peso_mutante1, 1.0, 10.0), 
+        JogadorInteligente(peso_mutante2, 1.0, 10.0)
+    ]
+    titulos = ["Limitada", "Intermediaria", "Avancada", f"MutanteA_({peso_mutante1})", f"MutanteB_({peso_mutante2})"]
+    jogos = [Jogo(0, 0, jogadores[i], geradores[i], titulos[i]) for i in range(5)]
+    
+    rodando = True
+    while rodando:
+        todos_finalizados = True
+        for jogo in jogos:
+            # Trava estrita nos 300
+            if jogo.pecas_jogadas >= MAX_PECAS: jogo.game_over = True
+            jogo.update(500, 1, False)
+            if not jogo.game_over: todos_finalizados = False
 
-# loop infinito (simulação contínua)
-while rodando:
-    dt = CLOCK.tick(120)  # FPS (quanto maior, mais fluido)
+        # Feedback interativo em 1 única linha no terminal para não flodar a tela
+        sys.stdout.write(f"\rPeças | L: {jogos[0].pecas_jogadas:03d} | I: {jogos[1].pecas_jogadas:03d} | A: {jogos[2].pecas_jogadas:03d} | MA: {jogos[3].pecas_jogadas:03d} | MB: {jogos[4].pecas_jogadas:03d} de {MAX_PECAS}")
+        sys.stdout.flush()
 
-    for evento in pygame.event.get():
-        if evento.type == pygame.QUIT:
+        if todos_finalizados:
+            # Sorteio computado via Lambda para ditar o Pódio Baseado em Pontos Acumulados
+            ranking_final = sorted(jogos, key=lambda j: j.pontos, reverse=True)
+            
+            print("\n\n=============== CLASSIFICAÇÃO DA SESSÃO ===============")
+            for posicao, jogo in enumerate(ranking_final, start=1):
+                st = "CONCLUIDO" if jogo.pecas_jogadas >= MAX_PECAS else "COLAPSO"
+                print(f"{posicao} Lugar | {jogo.titulo.ljust(16)} | Pontos: {jogo.pontos:06d} | Peças: {jogo.pecas_jogadas:03d} [{st}]")
+            print("=======================================================")
+            
+            sessao_id = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            arquivo_existe = os.path.isfile('relatorio_ia.csv')
+            
+            # Anexa os resultados (Modo a - Append) com detalhes ricos da pontuação de cada I.A
+            with open('relatorio_ia.csv', 'a', newline='') as f:
+                writer = csv.writer(f)
+                if not arquivo_existe: writer.writerow(['Data_Sessao', 'Posicao_Ranking', 'IA_Modelo', 'Pontos_Finais', 'Pecas_Utilizadas'])
+                for pos, jogo in enumerate(ranking_final, start=1):
+                    writer.writerow([sessao_id, pos, jogo.titulo, jogo.pontos, jogo.pecas_jogadas])
+            print("Histórico cumulativo registrado com sucesso no banco de dados relatorio_ia.csv.")
             rodando = False
-
-    jogo.update(dt)
-    jogo.desenhar(TELA)
