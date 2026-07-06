@@ -13,15 +13,19 @@ Um simulador interativo onde uma **Inteligência Artificial** joga uma partida i
 ## ✨ O que já está funcionando (Features atuais)
 
 - [x] **Arquitetura POO Sólida:** Uso de Classes Abstratas, Encapsulamento de matrizes (Getters/Setters) e Métodos Estáticos para reaproveitamento de código visual.
-- [x] **Sistema de Identificação (ID):** Contorno inteligente do *Garbage Collector* do Python usando **Atributos de Classe** para evitar a fusão visual de blocos da mesma cor.
-- [x] **Cérebro da IA (V1):** Algoritmo heurístico que avalia o peso de "buracos vazios" vs "altura da pilha" para encontrar a melhor jogada.
-- [x] **Rotação Inteligente de Matrizes:** A IA é capaz de simular e testar as 4 rotações possíveis (0°, 90°, 180° e 270°) através da transposição de matrizes antes de tomar a decisão final.
-- [x] **Motor Gráfico Clássico:** Renderização usando Pygame com física de colisão, iluminação de fundo da grade e blocos em estilo fliperama retrô.
+- [x] **Modularidade de Projeto:** Código dividido em 6 partes: `settings.json` (pesos), `config.py` (constantes), `elementos.py` (física), `estrategia.py` (cérebro das IAs), `motor.py` (motor de jogo) e `main.py` (gerenciador).
+- [x] **Inteligência Artificial (Estratégia Avançada):** Três níveis de IA (Limitada, Intermediária e Avançada). A versão Avançada utiliza **Lookahead (Visão de Futuro)**, projetando na memória o encaixe da peça atual + a próxima peça (via *Buffer*) para maximizar o score.
+- [x] **Cérebro Heurístico:** Algoritmo que utiliza "pesos de penalidade" (ex: peso 8.0 para buracos). A IA calcula o custo de cada jogada, onde o "medo" de buracos a força a escolher posições mais estáveis.
+- [x] **Sistema de Simulação em Batch (Terminal):** Modo de teste de estresse (5 IAs simultâneas, incluindo mutantes genéticos aleatórios). Computa 300 peças por IA, gera ranking de performance e exporta para `relatorio_ia.csv` via *append*.
+- [x] **Interface Gráfica Responsiva:** Ajuste automático de resolução e tela cheia via `pygame.display.Info()`. Inclui um "Modo Raio-X" (tecla TAB) para visualização em tempo real das falhas estruturais (buracos) detectadas pela IA.
+- [x] **Otimização de Performance:** Substituição do `deepcopy` por fatiamento de lista (`[linha[:] for linha in grid]`), reduzindo drasticamente o consumo de memória e permitindo processamento em alta velocidade.
+- [x] **Motor Gráfico Clássico:** Renderização em *Flat Design* com sidebar 3D para próxima peça e fontes otimizadas para leitura de dados.
 
 ## 🚀 O que vem por aí (Roadmap)
 
-- [ ] Otimização do tempo de cálculo (Delta Time) para simulações mais precisas.
-- [ ] Adicionar efeitos sonoros clássicos.
+- [ ] Implementar sistema de evolução genética automática (ajuste fino dos pesos via IA).
+- [ ] Adicionar trilha sonora e efeitos sonoros clássicos.
+- [ ] Otimização do tempo de cálculo (Delta Time) para simulações ainda mais precisas.
 
 ---
 
@@ -35,5 +39,6 @@ Como o projeto está em desenvolvimento, você pode testar o estado atual da IA 
 
 2. **Clone este repositório:**
    Abra o seu terminal (ou prompt de comando) e digite:
-   ```bash
-   git clone https://github.com/amorimrh/TETRIS-POOII.git
+   
+```bash
+   git clone [https://github.com/amorimrh/TETRIS-POOII.git](https://github.com/amorimrh/TETRIS-POOII.git)
