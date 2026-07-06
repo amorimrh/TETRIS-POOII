@@ -1,0 +1,19 @@
+{
+"_comentario": "Este arquivo foi criado para centralizar as configurações.",
+"semente_competicao": 8844,
+"ia_avancada": {
+"peso_buracos": 8.0,
+"peso_altura": 1.2,
+"peso_tetris": 20.0
+},
+"ia_intermediaria": {
+"peso_buracos": 4.0,
+"peso_altura": 1.0,
+"peso_tetris": 0.0
+},
+"ia_limitada": {
+"peso_buracos": 0.0,
+"peso_altura": 1.0,
+"peso_tetris": 0.0
+}
+}
