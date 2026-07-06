@@ -5,7 +5,7 @@ from config import *
 
 class GeradorDePecas:
     """
-    Aplico o padrão de projeto 'Factory' aliado a um 'Buffer'.
+    aplico o padrão de projeto 'Factory' aliado a um 'Buffer'.
     Mantenho uma peça no presente e sorteio a do futuro. Isso é fundamental para que a 
     IA Avançada consiga ler o futuro sem roubar ou dessincronizar a semente aleatória geral.
     """
