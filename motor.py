@@ -5,7 +5,7 @@ from estrategia import JogadorInteligente, JogadorIntermediario
 
 class Jogo:
     """
-    professor, utilizei o princípio do Encapsulamento. O motor instancia localmente a Grade
+    Utiliza o princípio do Encapsulamento. O motor instancia localmente a Grade
     e os componentes, permitindo escalar o jogo virtualmente na RAM em Modo Headless ou Gráfico.
     """
     def __init__(self, x_offset, y_offset, jogador, gerador, titulo="IA"):
