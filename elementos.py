@@ -5,7 +5,7 @@ from config import *
 
 class GeradorDePecas:
     """
-    professor, aqui apliquei o padrão de projeto 'Factory' aliado a um 'Buffer'.
+    Aplico o padrão de projeto 'Factory' aliado a um 'Buffer'.
     Mantenho uma peça no presente e sorteio a do futuro. Isso é fundamental para que a 
     IA Avançada consiga ler o futuro sem roubar ou dessincronizar a semente aleatória geral.
     """
@@ -21,7 +21,7 @@ class GeradorDePecas:
 
 class ElementoVisual(ABC):
     """
-    professor, utilizei herança e polimorfismo a partir desta classe base abstrata.
+    Utilizo herança e polimorfismo a partir desta classe base abstrata.
     O método de renderização 3D é estático para ser reutilizado sem instanciar novos objetos.
     """
     @abstractmethod
