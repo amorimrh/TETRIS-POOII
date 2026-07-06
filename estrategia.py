@@ -3,7 +3,7 @@ from config import *
 
 class Jogador(ABC):
     """
-    professor, apliquei aqui o padrão de projeto 'Strategy' (Padrão Comportamental).
+    aplico aqui o padrão de projeto 'Strategy' (Padrão Comportamental).
     A classe mãe 'Jogador' define a interface e o construtor dinâmico de 3 pesos analíticos,
     permitindo criar IAs com perfis diferentes sem replicar o núcleo da equação.
     """
