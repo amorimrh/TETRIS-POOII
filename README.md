@@ -20,7 +20,6 @@ Um simulador interativo onde uma **Inteligência Artificial** joga uma partida i
 
 ## 🚀 O que vem por aí (Roadmap)
 
-- [ ] Implementar sistema de Níveis de Dificuldade da IA (Fácil, Médio, Impossível) manipulando a velocidade e a heurística.
 - [ ] Otimização do tempo de cálculo (Delta Time) para simulações mais precisas.
 - [ ] Adicionar efeitos sonoros clássicos.
 
