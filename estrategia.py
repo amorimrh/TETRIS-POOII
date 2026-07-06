@@ -62,7 +62,7 @@ class Jogador(ABC):
 
 class JogadorInteligente(Jogador):
     """
-    professor, a IA Avançada implementa 'Lookahead'.
+    A IA Avançada implementa 'Lookahead'.
     Ela avalia o impacto conjunto da peça atual com as possibilidades projetadas da próxima peça.
     """
     def __init__(self, peso_buracos, peso_altura, peso_tetris):
@@ -109,7 +109,7 @@ class JogadorInteligente(Jogador):
 
 class JogadorIntermediario(Jogador):
     """
-    professor, a IA Intermediária sofre de imediatismo. 
+    A IA Intermediária sofre de imediatismo. 
     Livre fisicamente para girar, mas incapaz de projetar as intenções na peça futura.
     """
     def __init__(self, peso_buracos, peso_altura, peso_tetris=0.0):
@@ -139,7 +139,7 @@ class JogadorIntermediario(Jogador):
 
 class JogadorLimitado(Jogador):
     """
-    professor, a IA Limitada possui deficiência cognitiva total.
+    A IA Limitada possui deficiência cognitiva total.
     Ela ignora o futuro, e está presa à orientação de spawn (não executa rotação).
     """
     def __init__(self, peso_buracos, peso_altura, peso_tetris=0.0):
